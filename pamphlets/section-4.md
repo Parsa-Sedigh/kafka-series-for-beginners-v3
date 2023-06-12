@@ -107,6 +107,34 @@ by the producer into kafka
 Note: Producers are the ones who choose where the message is gonna end up thanks to the key bytes(by hashing the key)
 
 ## 9-9 - Consumers & Deserialization
+### Consumers
+We have serializing at producer side and deserializing at the consumer side.
+
+- consumers implement the pull model. That means that the consumers are going to request data from the **kafka brokers(servers**) and then
+they will get a response back. It's **not** the kafka broker pushing data to the consumers. Instead, it's a pull model.
+- consumer read data from a topic(identified by name) - pull model
+- when consumers need to read data from a partition, they will automatically know which broker(kafka server) to read from and in case a broker has a 
+failure, the consumers are again very smart and they will know how to recover from this.
+- data is read in order from low to high offset within **each** partition. But remember there's no ordering guarantees **across** partitions.
+Because they are different partitions. The only ordering we have is within each partition. So if a consumer consumes from multiple partitions, we have
+ordering for each partition, but there is no ordering across partitions.
+
+### Consumer deserializer
+Consumers need to transform received bytes into objects or data
+- deserialize indicates how to transform bytes into objects/data(both key and value is gonna be in binary format after receiving)
+- they are used on the key and value of the message
+- the consumer has to know in advance, what is the format of your messages. For example the key is integer, so it's gonna use IntegerDeserializer to transform
+the key that is bytes into an integer
+- common deserializers:
+  - string(including JSON)
+  - int, float
+  - avro
+  - protobuf
+- since the consumer needs to know in advance what is the expected format for your key and value, the serialization/deserialization type
+must not change during a topic lifecycle(create a new topic instead - also the consumers should be re-programmed a bit). Otherwise the consumers are gonna break.
+So if you want to change the data type of your topic, create a new topic instead.
+
+
 ## 10-10 - Consumer Groups & Consumer Offsets
 ## 11-11 - Brokers and Topics
 ## 12-12 - Topic Replication
