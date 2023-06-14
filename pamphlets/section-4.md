@@ -134,8 +134,70 @@ the key that is bytes into an integer
 must not change during a topic lifecycle(create a new topic instead - also the consumers should be re-programmed a bit). Otherwise the consumers are gonna break.
 So if you want to change the data type of your topic, create a new topic instead.
 
-
 ## 10-10 - Consumer Groups & Consumer Offsets
+### Consumer groups
+- all the consumers in an application read data as a consumer group. For example we have a kafka topic with 5 partitions and then we have a
+consumer group that is called `consumer-group-application` and that consumer group has 3 consumers.
+- each consumer within a group(if all belong to the same group) reads from exclusive partitions. Meaning we won't have two consumers that is consuming
+from the same partition. For example consumer 1 is reading from partition 0 and 1, consumer 2 is reading from partition2 and 3 and consumer 3 is
+reading from partition 4. consumers read from distinct partitions. This way a group is gonna read the topic as a whole.
+
+### Consumer groups - what if too many consumers?
+What if we have more consumers in your group than partitions?
+
+- if you have more consumers than partitions, some consumers will be inactive(it won't help other consumers to read from partitions, it's gonna stay
+inactive)
+
+### Multiple consumer groups on one topic
+You can have multiple consumer groups on one topic. 
+- in kafka it's completely acceptable to have multiple consumer groups on the same topic. Therefore we could have some partitions that will
+have multiple readers(consumers), but within a consumer group, only one consumer is going to be assigned to a partition.
+- to create distinct consumer groups, use the consumer property `group.id` to give a name to consumer group and then consumers will know in which
+group they belong
+
+Q: Why would you have multiple consumer groups?
+
+Let's say we have location service and notification service reading from the same data stream of `trucks_gps`, this means we're gonna have one consumer
+group per service(because we can't have two consumers that are in the same consumer, reading from the same partition, therefore we need to have two
+consumer groups in this case). So one consumer group will be for the location service and another consumer group for notif service.
+
+![](./img/10-10-1.png)
+
+### Consumer offset
+Consumer groups are even more powerful than what we think.
+- in a group we can define consumer offsets. What are they? Kafka is gonna store the offsets at which a consumer group has been reading and these
+offsets are going to be in a kafka topic named `__consumer_offsets`.
+- the offsets committed are in kafka `topic` named `__consumer_offsets`. It has two underscores at the beginning because it's an internal kafka topic.
+- when a consumer in a group has processed data received from kafka, it should **periodically** committing the offsets(the kafka broker will
+write to `__consumer_offsets`, not the group itself).
+- by committing the offsets we're going to be able to tell the kafka broker how far we've been successfully reading into the kafka topic
+- why consumers tell broker to commit offsets? if a consumer dies and then comes back, it will be able to read back from where it left off thanks to
+the committed consumer offsets. For example the broker is gonna say: hey in partition 2, it seems you have been reading up to offset 4262, then when
+you restart, I will only send you data from this offset onwards.
+
+The consumers are gonna commit offsets once in a while and when the offsets are committed, this is gonna allow the consumer to keep on reading from that
+offset onwards.
+
+### Delivery semantics for consumers
+based on how and when you commit offsets, you're gonna be in one of the delivery modes(there are 3 modes).
+
+- by default, java consumers will **automatically** commit offsets(at least once)
+- if you choose to commit manually, there are 3 delivery semantics
+- at least once(usually preferred)
+  - offsets are committed after the message is processed
+  - if the processing goes wrong, the message will be read again
+  - this can result in duplicate processing of messages. Make sure your processing is idempotent(i.e. processing again the message won't impact your
+  systems)
+- at most once
+  - offsets are committed as soon as messages are received
+  - if the processing goes wrong, some messages will be lost(they won't be read again, because we have committed offsets sooner than when we're done
+  processing those messages)
+- exactly once
+  - for kafka => kafka workflows: use the transactional API(easy with kafka streams API)
+  - for kafka => external system workflows: use an **idempotent** consumer
+
+kafka => kafka workflows means when we read from topic and then we write back to topic as a result, we can use the transactional API.
+
 ## 11-11 - Brokers and Topics
 ## 12-12 - Topic Replication
 ## 13-13 - Producer Acknowledgements & Topic Durability
