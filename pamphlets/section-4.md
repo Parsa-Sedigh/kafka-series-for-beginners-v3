@@ -199,6 +199,39 @@ based on how and when you commit offsets, you're gonna be in one of the delivery
 kafka => kafka workflows means when we read from topic and then we write back to topic as a result, we can use the transactional API.
 
 ## 11-11 - Brokers and Topics
+### Kafka brokers
+- a kafka cluster is composed of multiple brokers(servers). A broker is just a server but in kafka they're called brokers because they receive and send data.
+- each broker is identified with it's id(integer)
+- each broker contains only certain topic partitions. That means your data is gonna be distributed across all brokers
+- after connecting to any broker(called a bootstrap broker), you will be connected(and know how to connect) to the 
+entire cluster(kafka clients have smart mechanics for that named broker discovery mechanism). clients are producers or consumers.
+This means you don't need to know in advance, all the brokers in your cluster, you just need to know how to connect to one broker and 
+then your clients will automatically connect to the rest.
+- a good number to get started is 3 brokers, but some big clusters have over 100 brokers
+
+### Brokers and topics
+The topic partitions are gonna be spread out across all brokers in whatever order.
+
+example of topic-a with 3 partitions and topic-b with 2 partitions and 3 brokers
+
+As you can see in example, the partitions(data) is distributed and it's normal for example the broker 103 doesn't have any topic-b data(any partitions of it).
+
+So data or partitions that have data are gonna be distributed across all brokers and this is what makes kafka scale(horizontal). Because the more
+partitions and more brokers we add, the more the data is gonna be spread out across our entire cluster.
+
+Note: The brokers always don't have all the data(like broker 103 in the example below).
+![](./img/11-11-1.png)
+
+### Kafka broker discovery
+- every kafka broker is also called a "bootstrap server"
+- that means that you only need to connect to one broker and the kafka clients will know how to be connected to the entire cluster(smart clients)
+So for example kafka client will initiate a connection into broker 101 as well as a metadata request and then broker 101 will return a list of
+all the brokers in the cluster(and more data such as which broker has which partition). Then the kafka client thanks to this list of all brokers,
+is gonna be able to connect to the broker it needs(to produce or consume data)
+- each broker is smart and it knows about all brokers, topics and partitions(metadata of your kafka cluster)
+
+![](./img/11-11-2.png)
+
 ## 12-12 - Topic Replication
 ## 13-13 - Producer Acknowledgements & Topic Durability
 ## 14-14 - Zookeeper
