@@ -11,6 +11,7 @@
 no querying capability within kafka
 
 ### Partitions and offsets
+- topics are split into partitions(example: 100 partitions)
 - Topics are general but you can divide them into partitions. So a topic can be made of for example 100 partitions
 - The messages sent to kafka topic are going to end up in these partitions and messages within each partition are going to be ordered
 - data is written into partitions
@@ -223,7 +224,7 @@ Note: The brokers always don't have all the data(like broker 103 in the example 
 ![](./img/11-11-1.png)
 
 ### Kafka broker discovery
-- every kafka broker is also called a "bootstrap server"
+- every kafka broker is also called a **bootstrap server**
 - that means that you only need to connect to one broker and the kafka clients will know how to be connected to the entire cluster(smart clients)
 So for example kafka client will initiate a connection into broker 101 as well as a metadata request and then broker 101 will return a list of
 all the brokers in the cluster(and more data such as which broker has which partition). Then the kafka client thanks to this list of all brokers,
@@ -233,6 +234,53 @@ is gonna be able to connect to the broker it needs(to produce or consume data)
 ![](./img/11-11-2.png)
 
 ## 12-12 - Topic Replication
+### Topic replication factor
+- topics should have a replication factor > 1 (usually between 2 and 3). Note: When you're developing on your local machine, topics can
+have a replication factor of one. But usually when you're in production(having a real kafka cluster), you need to set a replication factor greater
+than one, usually between 2 and 3 and most commonly at 3.
+- This way, if a broker is down(a kafka server is stopped for maintenance or for technical issues), then another broker can serve the data because it
+has a copy of the data to serve and receive
+- **example:** topic-a with 2 partitions and replication factor of 2. Now we have 3 kafka brokers and we're gonna place partition 0 of topic-A
+onto broker 101, partition 1 of topic-a on broker 102. Until now, we have place the initial partitions without replications. Now because
+we have a replication factor of 2, then we're gonna have a copy of partition 0 onto broker 102 with a replication mechanism(so partition 0 is on both
+broker 101 and 102) and a copy of partition 1 on broker 103(so partition 1 is on both broker 102 and 103) with again, a replication mechanism.
+**The number of partitions was 2 and the replication factor was 2, so the total number of partitions gonna be 4(2 * 2). We can see that the brokers
+are replicating data from other brokers.**
+![](./img/12-12-1.png)
+
+Q: Look at the above pic: What if we lose broker 102?
+
+Answer: Well we have broker 101 and 103 still up and they can still serve the data. So partition 0 and 1 are still available within our cluster and
+this is why we have replication factor.
+![](./img/12-12-2.png)
+
+### Concept of leader for a partition
+- at any time only **ONE** broker can be a leader for a given partition
+- the rule: **producers can only send data to the broker that is the leader of a partition**
+- the other brokers will replicate the data
+- therefore, each partition has one leader and multiple ISR(in-sync replica). If the data is replicated fast enough, then each replica
+is going to be called an ISR.
+
+In image below, the leaders for partitions are specified. Broker 101 is the leader of partition 0 and broker 102 is the leader of partition 1.
+![](./img/12-12-3.png)
+
+### default producer & consumer behaviour with leaders
+- by default(default behavior with leaders), the kafka producers can only write to the leader broker for a partition. For example:
+if the producer wants to send data to partition 0 and we have a leader and an ISR for partition 0, then the producer knows that it should only
+send the data into the broker that is the leader of that partition.
+- by default, kafka consumers will read only from the leader broker for a partition. So replicas of that partition, are replicas just for the sake
+of replicating data and in case the leader broker goes down, then one of them can become the new leader and receive data from the producers and
+serve data for the consumers.
+
+These were the default behaviors.
+![](./img/12-12-4.png)
+
+### Kafka consumers replica fetching(kafka v2.4+)
+- since kafka 2.4, it's possible to configure consumers to read from the closes replica. Why? This may help to improve latency, because maybe the
+consumer is really close to the replica and also it helps decrease network cost if we're using the cloud. Because if things are in the same
+data center, then you have little to no cost.
+  ![](./img/12-12-5.png)
+
 ## 13-13 - Producer Acknowledgements & Topic Durability
 ## 14-14 - Zookeeper
 ## 15-15 - Kafka KRaft Removing Zookeeper
