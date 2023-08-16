@@ -279,10 +279,66 @@ These were the default behaviors.
 - since kafka 2.4, it's possible to configure consumers to read from the closes replica. Why? This may help to improve latency, because maybe the
 consumer is really close to the replica and also it helps decrease network cost if we're using the cloud. Because if things are in the same
 data center, then you have little to no cost.
-  ![](./img/12-12-5.png)
+![](./img/12-12-5.png)
 
 ## 13-13 - Producer Acknowledgements & Topic Durability
+### Producer Acknowledgements(acks)
+We have producers sending data to brokers and we know brokers have topic partitions.
+
+- producers can choose to receive acknowledgements of data writes. That means to have the confirmation from the kafka broker that the write did
+successfully happen.
+- We have three settings:
+  - `acks=0`: producer won't wait or ask for an acknowledgement(possible data loss, because if the broker goes down, the producer won't know about it)
+  - `acks=1`: producer will wait for leader(of a partition) acknowledgement(limited data loss)
+  - `acks=all`: leader + replicas acknowledgement(no data loss). Means we require the leader as well as all replicas(in sync replicas) to acknowledge
+  the writes which is going to guarantee of no data loss under certain circumstances.
+
+### Kafka topic durability
+- if we have a topic with the replication factor of 3, then the topic(topic data) can withstand two brokers loss
+- as a rule, for a replication factor of N, you can permanently lose up to N - 1 brokers and still recover your data(still have a copy of your
+data somewhere in your cluster)
+
+Note: The image for this slide is wrong. If we have replication factor of 3, we would need 4 brokers.
+
+If replication factor is 3, we need 4 brokers and ... .
+
 ## 14-14 - Zookeeper
+- zookeeper manages brokers(keeps list of them)
+- zookeeper helps in performing leader election for partitions. Whenever a broker goes down we need to perform a leader election to choose the
+new leader for partitions(or some of them) and zookeeper is going to help with this process.
+- zookeeper sends notifications to kafka brokers in case of changes(e.g. new topic, broker dies, broker comes up, delete topics, etc...). So zookeeper
+has a lot of kafka components metadata
+- kafka 2.x can't work without zookeeper. So you can't launch kafka without launching zookeeper
+- kafka 3.x can work without zookeeper(KIP-500) - using kafka raft instead. So we can run kafka work on its own without zookeeper, it's called
+the kafka raft(kraft) mechanism instead.
+- kafka 4.x will not have zookeeper
+- zookeeper by design operates with an odd number of servers(1, 3, 5, 7). So you either have 1 zookeeper, or 3 or 5 or 7(never more than 7 usually).
+- zookeeper also has leaders(writes) and the rest of the servers are followers(reads)
+- zookeeper does **NOT** store consumer offsets with kafka > v 0.10. This is old information: kafka consumers in the old versions of kafka,
+used to store consumer offsets on zookeeper. But now as you know, they store consumer offsets on the internal kafka topics named `consumer_offsets`.
+So zookeeper does not hold any consumer data starting with kafka `v 0.10` .
+
+### zookeeper cluster(ensemble)
+Brokers are connected to zookeeper and that's how they get their metadata.
+![](./img/12-12-6.png)
+
+### Should you use zookeeper?
+- with kafka brokers(are you managing kafka brokers)?
+  - yes, until kafka 4.0 is out while waiting for kafka without zookeeper to be production-ready. So you shouldn't use kafka without zookeeper in production.
+  But we'll see how to start kafka without zookeeper to play with it. But this is not production ready yet.
+- with kafka clients?
+  - over time, the kafka clients and CLI have been migrated to leverage the brokers as a (the only) connection endpoint instead of zookeeper. But before,
+  we used to connect our producers, clients(consumers) and administration client to zookeeper.
+  - since kafka 0.10, consumers store offsets in kafka and zookeeper and must not connect zookeeper as it's deprecated.
+  - since kafka 2.2, the `kafka-topics.sh` CLI command references kafka brokers and not zookeeper for topic management(creating, deletion etc...) and the
+  zookeeper CLI argument is deprecated.
+  - all the APIs and commands that were previously leveraging zookeeper are migrated to use kafka instead, so that when clusters are migrated
+  to be without zookeeper(when we're going to have kafka without zookeeper), the change is invisible to clients.
+  - zookeeper is also less secure than kafka and therefore zookeeper ports should only be opened to allow traffic from kafka brokers and not kafka
+  clients. So we should protect zookeeper if you use it, to only accept connections from kafka brokers and not from kafka clients
+  - therefore, to be a great modern-day kafka developer, never ever use zookeeper as a configuration in your kafka clients and other
+  programs that connect to kafka. So do not connect to zookeeper in your programs, only connect to kafka.
+
 ## 15-15 - Kafka KRaft Removing Zookeeper
 
 ### 15 - KRaft performance improvement
