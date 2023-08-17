@@ -151,4 +151,78 @@ keep both these terminal windows open. With konduktor, you don't need to run the
 The defaults are the temporary files.
 
 ## 22 - Mac OS X Using brew
+### Mac OS X: start kafka using brew
+An alternative to installing java(brew will install it automatically) and then installing kafka binaries and then setting up the $PATH, we 
+can use a shortcut and install kafka using brew.
+1. install brew
+2. install kafka using brew(will install java JDK for you)
+3. start zookeeper using the binaries
+4. start kafka using the binaries in another process
+
+When kafka is installed with brew, you shouldn't use `.sh` extension files to use the commands, so for example use: `kafka-topics` and 
+**not** `kafka-topics.sh`.
+
 ### 22 - Kafka Brew Conduktor Kafkademy
+https://www.conduktor.io/kafka/how-to-install-apache-kafka-on-linux
+
+## 23 - Linux Download and Setup Kafka in PATH
+### 23 - Install Kafka on Linux Conduktor Kafkademy
+https://www.conduktor.io/kafka/how-to-install-apache-kafka-on-linux
+
+### 23 - Kafka Downloads Page
+https://kafka.apache.org/downloads
+
+## 24 - Linux Start Zookeeper and Kafka
+## 25-25 - Windows WSL2 Download Kafka and PATH Setup
+
+### 25 - Install Kafka on Windows WSL2 Conduktor Kafkademy
+https://www.conduktor.io/kafka/how-to-install-apache-kafka-on-windows
+### 25 - Kafka Downloads Page
+## 26 - Windows WSL2 Start Zookeeper & Kafka
+## 27 - Windows WSL2 How to Fix Problems
+
+## 28 - Windows WSL2 Extra Instructions
+IMPORTANT: If you're using Kafka on Windows WSL2
+
+When running a command from the CLI outside of WSL2 or your Java programs, you may get the following error:
+
+If do you get that error, please run the instructions below
+(this is to edge a WSL2 networking bug with Kafka, so we have to disable IPv6 on WSL2 to remediate)
+
+First, stop Kafka and Zookeeper.
+
+Then, please run these commands on your end on WSL2, one by one.
+
+Your password will be prompted on the first command.
+
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+and
+
+```shell
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+```
+and then, go to config/server.properties and edit the file to add the line:
+
+listeners=PLAINTEXT://localhost:9092
+
+
+When the three commands have succeeded, relaunch Zookeeper and Kafka.
+
+You should be able to connect from your Java programs or CLI without a problem!
+
+In case the fix above does not help
+
+Try the fixes outlined in these pages:
+
+https://docs.conduktor.io/kafka-cluster-connection/setting-up-a-connection-to-kafka/connecting-to-kafka-running-on-windows-wsl-2
+
+https://stackoverflow.com/questions/64177422/unable-to-produce-to-kafka-topic-that-is-running-on-wsl-2-from-windows
+
+If after using these fixes, you still can't connect to Kafka, we recommend either
+Running Kafka on Windows non-WSL2 (next lecture)
+
+Running Kafka using Conduktor
+
+Happy learning!
+
+## 29 - Windows nonWSL2 Start Zookeeper and Kafka
