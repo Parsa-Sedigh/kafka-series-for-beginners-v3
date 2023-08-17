@@ -320,7 +320,7 @@ So zookeeper does not hold any consumer data starting with kafka `v 0.10` .
 
 ### zookeeper cluster(ensemble)
 Brokers are connected to zookeeper and that's how they get their metadata.
-![](./img/12-12-6.png)
+![](./img/14-14-1.png)
 
 ### Should you use zookeeper?
 - with kafka brokers(are you managing kafka brokers)?
@@ -340,6 +340,34 @@ Brokers are connected to zookeeper and that's how they get their metadata.
   programs that connect to kafka. So do not connect to zookeeper in your programs, only connect to kafka.
 
 ## 15-15 - Kafka KRaft Removing Zookeeper
+### About kafka kRaft
+- in 2020, the apache kafka project started to work to remove the zookeeper dependency from it(KIP-500)
+- why? Because zookeeper shows scaling issues when kafka clusters have > 100,000 partitions
+- by removing zookeeper, apache kafka can
+  - scale to millions of partitions and becomes easier to maintain and set-up
+  - improve stability, makes it easier to monitor, support and administer
+  - single security model for the whole system
+  - single process to start with kafka
+  - faster controller shutdown and recovery time
+- kafka 3.x now implements the raft protocol(KRaft) in order to replace zookeeper
+  - kraft is not production ready yet, see: https://github.com/apache/kafka/blobl/trunk/config/kraft/README.md
+
+We will learn how to start kafka in kraft mode.
+
+### kafka KRaft architecture
+Look at the left side: with zookeeper we have that left arch with for example 3 zookeepers managing 3 kafka brokers.
+
+Right arch: With the KRaft mode, we're only going to have 3 brokers, one of them being designated as the quorum leader to replace the zookeeper function
+
+![](./img/15-15-1.png)
+
+### KRaft performance improvements
+As we can see, the controlled shutdown using KRaft mode is much lower and the recovery time if the shutdown was not done well, is also much lower
+than with zookeeper.
+
+So KRaft has a lot of benefits.
+
+![](./img/15-15-2.png)
 
 ### 15 - KRaft performance improvement
 https://www.confluent.io/blog/kafka-without-zookeeper-a-sneak-peek/
@@ -348,3 +376,22 @@ https://www.confluent.io/blog/kafka-without-zookeeper-a-sneak-peek/
 https://github.com/apache/kafka/blob/trunk/config/kraft/README.md
 
 ## 16-16 - Theory Roundup
+### Theory roundup we've looked at all the kafka concepts
+A kafka cluster can be made of multiple brokers. For example in img, we have 9 brokers in our cluster.
+
+Within the cluster, we have topics, partitions, replication, partition leader and in-sync replicas and kafka internal offsets topic.
+
+Producers: They take data from the source system or ... and then they send data into apache kafka.
+
+Round robin: data is distributed across all partitions in a topic evenly.
+
+Key-based ordering: When we specify a key, then the same key is gonna end up in the same partition 
+
+Consumers store offsets into `consumer_offsets` topic.
+
+Note: Currently a kafka cluster is managed by zookeeper where there is leader-follower concept in zookeeper as well as broker management and 
+metadata management.
+
+The community is transitioning from using zookeeper to using just kafka cluster in KRaft mode.
+
+![](./img/16-16-1.png)
