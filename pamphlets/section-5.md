@@ -116,7 +116,39 @@ Now we need to start kafka using it's command lines.
 
 ## 21 - Mac OS X Start Zookeeper and Kafka
 ### Mac OS X: one kafka broker - with zookeeper
-We have a kafka cluster of 
+We have a kafka cluster of one broker and one zookeeper.
+
+1. start zookeeper using the kafka binaries
+2. start kafka using the kafka binaries in another process
+
+Open two terminal windows, then run command below in one window: `zookeeper-server-start.sh`
+If you run this, it says: `sh [-daemon] zookeeper.properties`. Which means it doesn't work because it needs to have a `zookeeper.properties` filed to it.
+Thankfully, the `zookeeper.properties` file is available within the `<kafka directory>/config/zookeeper.properties`.
+
+This file tells zookeeper how to get started. Now run, this command to start zookeeper.
+```shell
+# start zookeeper
+# Pass the path to zookeeper.properties file
+zookeeper-server-start.sh /Users/<username>/kafka_2.13-3.5.1/config/zookeeper.properties
+```
+
+Now in another terminal window, we wanna start kafka: `kafka-server-start.sh`
+But it won't work, it says: `USAGE: /Users/<username>/kafka_2.13-3.5.1/bin/kafka-server-start.sh [-daemon] server.properties [--override property=value]*`.
+It means we need to pass `server.properties` file with the full path:
+```shell
+# start kafka
+kafka-server-start.sh /Users/<username>/kafka_2.13-3.5.1/config/server.properties
+```
+
+keep both these terminal windows open. With konduktor, you don't need to run these commands, konduktor runs them itself.
+
+**Optional:** You can change the kafka and zookeeper data storage directory.
+1. For zookeeper: `zookeeper.properties` and set the following to your heart's desire:
+`dataDir=/your/path/to/data/zookeeper`. Default option is: `dataDir=/tmp/zookeeper`
+2. For kafka: edit `server.properties` and set the following to your heart's desire:
+`log.dirs=/your/path/to/data/kafka`. Default option is: `log.dirs=/tmp/kafka-logs`
+
+The defaults are the temporary files.
 
 ## 22 - Mac OS X Using brew
 ### 22 - Kafka Brew Conduktor Kafkademy
