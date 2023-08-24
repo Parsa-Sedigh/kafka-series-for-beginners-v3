@@ -205,7 +205,6 @@ and then, go to config/server.properties and edit the file to add the line:
 
 listeners=PLAINTEXT://localhost:9092
 
-
 When the three commands have succeeded, relaunch Zookeeper and Kafka.
 
 You should be able to connect from your Java programs or CLI without a problem!
