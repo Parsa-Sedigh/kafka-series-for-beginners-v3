@@ -188,9 +188,131 @@ So we're seeing the fact that consumer groups are able to restart to read where 
 case in our example).
 
 ## 49 - Java Consumer Graceful Shutdown
+Kafka consumer - graceful shutdown
+- ensure we have code in place to respond to termination signals
+- improve oru java code
+
+We're gonna add a shutdown hook to our consumer. Look at ConsumerDemoWithShutdown
+
+Since `consumer.wakeup()` makes the next call of `consumer.poll()` to throw an exception, we need to put the surrounding code of `consumer.poll()`
+into a try catch block.
+
+Now to test things, exit the consumer code. You should see the exit logs that we wrote for our consumer.
+
+Also the log that says: `Detected a shutdown...` which runs in a different thread, is distinguished by [Thread-1] instead of [main] which shows
+it ran on a different thread.
 
 ## 50 - Java Consumer inside Consumer Group
+### Kafka consumer: Java API - consumer groups
+We're gonna look at the behavior of our consumer as part of a consumer group.
+
+- make your consumer in java consume data as part of a consumer group
+- observe partition re-balance mechanisms
+![](./img/49-49-1.png)
+
+### Rebalancing in consumer group
+Now we want to start a second version of our consumer code. To do this, in intellij, go to edit configuration modal which is for
+run configuration of the project, click on `Edit configuration`, then click on `Modify options`, then enable `Allow multiple instances` which
+allows us to run the same program multiple times.
+
+Now if you re-run the program, it won't overwrite the already running program, but instead it will run it as another instance.
+
+By having more consumers in a consumer group, the partitions gonna split between consumers and each consumer will be assigned to equal number
+of partitions, in case of even number of partitions or in case of odd number of partitions, one of the consumers will be assigned to one more
+partition. If we add more consumers to the group, the group is gonna rebalance the partitions to consumers. A related log to this, is:
+`Request joining group due to: group is already rebalancing`.
+
+Also when a consumer goes down(or stopped), the other consumers in the group will be notified that that consumer left and the group will be 
+rebalanced(meaning the partitions assigned to the consumer that went down, gonna get rebalanced among the existing consumers of the group).
+
+Now if you produce some messages by running for example ProducerDemoWithKeys program, you see that the messages are split between the 
+consumers of the same consume group.
+
 ## 51 - Java Consumer Incremental Cooperative Rebalance & Static Group Membership
+### Consumer groups and partition rebalance strategies
+Whenever you have consumers joining and leaving a group, partitions are going to move and when partitios move between consumers, it's
+called a rebalance.
+- moving partitions between consumers is called a rebalance
+- reassignment of partitions happen when a consumer leaves or joins a group
+- it also happens if an administrator adds new partitions into a topic
+
+Q: How do these partitions get assigned to the consumers?
+
+A: Based on the strategy, the outcome is different.
+![](./img/51-51-1.png)
+
+Some strategies are:
+- eager rebalance
+
+### Eager rebalance
+Default behavior(strategy).
+
+- all consumers are gonna stop, give up their membership of partitions. So no consumer is reading from no partitions
+- then all consumers are gonna rejoin the group they were in and get a new partition assignment
+- during a short period of time, the entire consumer group stops processings. It's called the stop the world event.
+- consumers don't necessarily "get back" the same partitions as they used to. In other words, there's no guarantee that your consumers
+are going to get back the partitions that they used to have.
+
+So there are two problems with this strategy:
+1. maybe you do want your consumers to get back the same partitions they had before
+2. you don't want some consumers to stop consuming. You don't want the stop the world event.
+
+Therefore, the next strategy is useful:
+### Cooperative reblance(incremental rebalance)
+Instead of reassigning all partitions to all consumers, reassign a small subset of the partitions from one consumer to another.
+
+- reassigning a small subset of the partitions from one consumer to another.
+- other consumers that don't have reassigned partitions, can still process uninterrupted
+- it can go through several iterations to find a "stable" assignment(hence the name "incremental")
+- avoids the "stop the world" events where all consumers stop processing data
+
+In image, we see that the incremental rebalance is smart and says: I only need to revoke partition 2, so consumer one and two can keep
+on reading from partition zero and one and then after this, the partition 2 is gonna get assigned to consumer 3 and consumer 3 can start
+reading from partition 2. So this was less disruptive than eager rebalance. It allowed us to keep on reading from the partitions that did not
+get rebalance.
+![](./img/51-51-2.png)
+
+### Cooperative reblance, how to use?
+The strategies that are not cooperative, are eager strategies. It means every time you use them, there's going to be a stop the world
+event.
+
+- kafka consumer: `partition.assignment.strategy`. The default value of this option used to be `RangeAssignor`
+  - RangeAssignor: assign partitions on a per-topic basis(can lead to imbalance)
+  - RoundRobin: assign partitions across all topics in round-robin fashion, optimal balance. This is also an eager type of assignment
+  - StickyAssginor: balanced like RoundRobin and then minimises partition movements when consumer join/leave the group in order to minimize
+  movements
+  - CooperativeStickyAssginor: rebalance strategy is identical to StickyAssginor but supports cooperative rebalances and therefore
+  consumers can keep on consuming from the topic
+
+The default assignor in kafka 3.0 is [RangeAssignor, CooperativeStickyAssginor], it will use the RangeAssignor by default, but allows
+upgrading to the CooperativeStickyAssginor with just a single rolling bounce that removes the RangeAssignor from the list.
+- kafka connect: if you use kafka connect, cooperative rebalance is already implemented(enabled by default)
+- kafka streams: cooperative rebalance is turned on by default using StreamsPartitionAssignor
+
+### Static group membership
+Sometimes we want to say: when a consumer leaves, then do not change assignments.
+
+Note: The reason why when a consumer leaves and comes back to the consumer group there's a re-assignment, is that it gets a new member ID. Because
+it leaves then upon joining, boom: here's a new member ID for you.
+
+- by default, when a consumer leaves a group, it's partitions are revoked and re-assigned
+- if it joins back, it will have a new "member ID" and new partitions assigned
+- if you specify `group.instance.id` as part of the consumer config, it makes the consumer a static member
+- this is helpful when consumers maintain local state and cache(to avoid re-building the cache)
+
+As you can see in the image below, consumer3 with id=consumer3 left the group but partition 2 is not going to be re-assigned, because
+consumer 3 was a static member. Now if the consumer3 joins back within the session timeout(`session.timeout.ms`), then partition 2 will
+be re-assigned to that consumer3 automatically without triggering re-balance.
+
+So this allows you to restart your consumer and not be worried that a rebalance is going to happen.
+
+But if your consumer is away for more than `session.timeout.ms`, then a re-balance is going to happen and in this case, partition 2 is gonna move to
+different consumer.
+
+This feature is helpful when you have sth like k8s.
+
+![](./img/51-51-3.png)
+
 ## 52 - Java Consumer Incremental Cooperative Rebalance Practice
 ## 53 - Java Consumer Auto Offset Commit Behavior
 
