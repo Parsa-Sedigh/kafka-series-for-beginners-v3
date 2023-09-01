@@ -24,20 +24,14 @@ public class ProducerDemoWithCallback {
         KafkaProducer<String, String> producer = new KafkaProducer(properties);
 
         for (int i = 0; i < 10; i++) {
-            String topic = "demo_java";
-            String value = "hello world" + i;
-            String key = "id_" + i;
-
-            ProducerRecord<String, String> producerRecord = new ProducerRecord(topic, key, value);
+            ProducerRecord<String, String> producerRecord = new ProducerRecord("demo_java", "hello world" + i);
 
             producer.send(producerRecord, new Callback() {
                 @Override
                 public void onCompletion(RecordMetadata metadata, Exception e) {
                     if (e == null) {
-                        // the same key goes to the same partition
                         log.info("Received new metadata. \n" +
                                 "Topic: " + metadata.topic() + "\n" +
-                                "Key: " + producerRecord.key() + "\n" +
                                 "Partition: " + metadata.partition() + "\n" +
                                 "Offset: " + metadata.offset() + "\n" +
                                 "Timestamp: " + metadata.timestamp());
