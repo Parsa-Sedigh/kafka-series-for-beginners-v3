@@ -279,13 +279,13 @@ event.
 - kafka consumer: `partition.assignment.strategy`. The default value of this option used to be `RangeAssignor`
   - RangeAssignor: assign partitions on a per-topic basis(can lead to imbalance)
   - RoundRobin: assign partitions across all topics in round-robin fashion, optimal balance. This is also an eager type of assignment
-  - StickyAssginor: balanced like RoundRobin and then minimises partition movements when consumer join/leave the group in order to minimize
+  - StickyAssignor: balanced like RoundRobin and then minimises partition movements when consumer join/leave the group in order to minimize
   movements
-  - CooperativeStickyAssginor: rebalance strategy is identical to StickyAssginor but supports cooperative rebalances and therefore
+  - CooperativeStickyAssignor: rebalance strategy is identical to StickyAssignor but supports cooperative rebalances and therefore
   consumers can keep on consuming from the topic
 
-The default assignor in kafka 3.0 is [RangeAssignor, CooperativeStickyAssginor], it will use the RangeAssignor by default, but allows
-upgrading to the CooperativeStickyAssginor with just a single rolling bounce that removes the RangeAssignor from the list.
+The default assignor in kafka 3.0 is [RangeAssignor, CooperativeStickyAssignor], it will use the RangeAssignor by default, but allows
+upgrading to the CooperativeStickyAssignor with just a single rolling bounce that removes the RangeAssignor from the list.
 - kafka connect: if you use kafka connect, cooperative rebalance is already implemented(enabled by default)
 - kafka streams: cooperative rebalance is turned on by default using StreamsPartitionAssignor
 
