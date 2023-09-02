@@ -314,9 +314,20 @@ This feature is helpful when you have sth like k8s.
 ![](./img/51-51-3.png)
 
 ## 52 - Java Consumer Incremental Cooperative Rebalance Practice
+See `ConsumerDemoCooperative`.
+
+After running the consumer, look at the logs and in `partition.assignment.strategy` and it's value by default is: `[RangeAssignor, CooperativeStickyAssignment]`.
+By default, after a consumer joins or leaves, we would have a stop the world event and you can confirm this by seeing the log: `(Re-)joining group` and before
+this log, you can see: `Revoke previously assigned partitions: <list of partitions>` which means all the partitions are being removed.
+
+Use `ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG` to set the partition assignment strategy.
+
+Now run at least two consumers.
+
 ## 53 - Java Consumer Auto Offset Commit Behavior
 
 ## 54 - Programming Advanced Tutorials
+The `ConsumerDemoAssignSeek` example is to reach to specific offset manually.
 
 ### 54 - Advanced Programming Tutorials
 https://www.conduktor.io/kafka/advanced-kafka-consumer-with-java
