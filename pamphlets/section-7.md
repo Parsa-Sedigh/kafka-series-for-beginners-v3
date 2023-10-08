@@ -68,6 +68,53 @@ it will collide with `first.topic` and you can't create this and vice-versa.
 Note: The number of replication factor can not be more than the number of brokers in our cluster.
 
 ## 38-38 - Kafka Console Consumer CLI
+### Kafka CLI: kafka-console.consumer.sh
+![](./img/38-38-1.png)
+
+```shell
+# Replace "kafka-console.consumer.sh" by "kafka-console.consumer" or "kafka-console.consumer.bat" based on your 
+# system(or /bin/kafka-console.consumer.sh or \bin\windows\kafka-console.consumer.bat if you didn't setup PATH / environment variable)
+kafka-console.consumer.sh
+
+# consuming(consume a topic)
+kafka-console.consumer.sh --bootstrap-server localhost:9092 --topic first_topic
+
+# other terminal
+# This will prompt you to write a message and by pressing enter, the message will appear in other terminal window(consumer)
+kafka-console.producer.sh --bootstrap-server localhost:9092 --topic first_topic --from-beginning
+
+# display key, values and timestamp of the message in consumer
+kafka-console.consumer --bootstrap-server localhost:9092 --topic first_topic --formatter kafka.tools.DefaultMessageFormatter
+--property print.timestamp=true --property print.key=true --property print.value=true --from-beginning
+```
+When you run `kafka-console.consumer.sh`, it won't receive the history of messages. In order to read from the history of the topic,
+run the command with `--from-beginning` option to read the old messages in kafka topic. This isn't the default behavior because the topic
+could be very large and you don't want to read all the messages. With this flag, we read from the last committed offset.
+
+By default, consumer consumes from tail of the topic, but you can overwrite this to read from the beginning of the topic with this flag.
+
+Note: When the consumer **group** has already committed the consumer offsets, if we start a new consumer in that group with `--from-beginning`,
+it won't read the messages that were committed by the consumer group.
+
+Note: Using this flag, on consumer, it looks like everything is out of order. No, it is in order. Because remember a topic can have multiple
+partitions and therefore that means that the **messages are going to be in order within each partition**. But the messages are sent to 
+different partitions and it can be round-robin(which partition to get the message) and therefore, in consumer, we're getting the messages
+in the order of messages in each partition but not across partitions. For example we get the messages from partition 1 and then partition 2.
+But you first message might be sent to partition 2 and second message to partition 1. So this might seem out of order. But it's not.
+
+Only if you had a topic with one partition, then all the messages will be in order. But then you would lose the scaling aspect of kafka, because
+you would only have one partition and therefore only one consumer at the same time.
+
 ## 39-39 - Kafka Consumers in Group
+### CLI consumer in groups with kafka-console-consumer.sh
+![](./img/39-39-1.png)
+
+Look at `3-kafka-console-consumer-in-groups.sh` .
+
+When the number of consumers in the same group, are more than partitions, some of consumers will be idle.
+
+Note: When we have consumers in the same group, the messages will be load balanced between them. But when we have multiple consumer groups
+reading the same topic partitions, all of those groups will receive the messages! So each consumer group get the messages.
+
 ## 40-40 - Kafka Consumer Groups CLI
 ## 41-41 - Resetting Offsets
