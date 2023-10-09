@@ -117,4 +117,19 @@ Note: When we have consumers in the same group, the messages will be load balanc
 reading the same topic partitions, all of those groups will receive the messages! So each consumer group get the messages.
 
 ## 40-40 - Kafka Consumer Groups CLI
+### Consumer group management CLI - kafka-consumer-groups.sh
+Multiple consumer groups can read from the same topic.
+![](./img/40-40-1.png)
+
+`4-kafka-consumer-groups.sh`
+
+When describing a consumer group, `CURRENT-OFFSET` shows how far this consumer group has read from the topic and `LOG-END-OFFSET` shows
+how many messages are in that topic. If `CURRENT-OFFSET` and `LOG-END-OFFSET` are equal, it means that consumer group has read all the messages
+of the topic. This is why the `LAG` is 0. If the consumer group hasn't read until the end of the topic, we would have a LAG greater than 0.
+
+Note: You can have a consumer group with no actual consumers inside.
+
 ## 41-41 - Resetting Offsets
+### consumer groups - reset offsets - kafka-consumer-groups.sh
+Consumers commit offsets once in a while, which allows them to restart the reads from where the offset was last committed.
+![](./img/41-41-1.png)
