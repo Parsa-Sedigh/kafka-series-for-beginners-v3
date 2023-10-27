@@ -227,3 +227,13 @@ elasticsearch or ... . This way, you can perform data science, reporting, audit 
 This is a common architecture with kafka.
 
 ## 103 - Case Study Logging and Metrics Aggregation
+### Logging and metrics aggregation
+When dealing with logs, we have less restriction regarding data loss and replication of data, so this is why we used to have acks=0 and lower
+replication factor and ... .
+
+Then from the kafka(logging and metrics aggregation), we're gonna send the data into the logging solutions like splunk and ... .
+
+The applications would have some kind of log forwarder which is a producer that will send all the logs into kafka(should be a high throughput producer)
+and for metrics, we have metrics collectors which is also some kind of producer.
+![](img/103-1.png)
+![](img/103-2.png)
