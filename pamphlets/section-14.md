@@ -174,5 +174,56 @@ for liking and deleting a post. An event describes what happened.
 ![](img/100-3.png)
 
 ## 101 - Case Study MyBank
+### Finance application - MyBank
+![](img/101-1.png)
+
+### Finance application - MyBank - architecture
+There must be a `bank_transactions` topic.
+
+All the bank transactions is **already** in a DB, so we want to get that information from the DB into kafka and for this, we're gonna
+use kafka connect source and there is sth called the CDC connector.
+
+CDC = change data capture. and one of these is debezium which allows us to read all the records in real time from DB and put them right away
+into kafka.
+
+So we don't need to write a producer for the data in DB, instead we can use kafka connect source.
+
+We need `user_settings` topic. Users will set their thresholds in the app and it talks to the app threshold service which is going to be a 
+proxy producer which sends data to the `user_settings` topic.
+
+We need `user_alerts` topic which holds the results.
+
+We need a kafka streams application that takes all the bank transactions from `bank_transactions` topic and the `user_settings` topic and checks
+if the transaction is greater than the user threshold specified in `user_settings`, if so, create a message in the `user_alerts` topic
+and notification service(consumer) will pull from `user_alerts` and send a notification to the user.
+
+![](img/101-2.png)
+
+About kafka streams app:
+
+When a user changed his setting, the alerts won't be triggered for past transactions, because we only read from the new transactions onward.
+
+User thresholds topic is actually user_settings in the img.
+
+![](img/101-3.png)
+
 ## 102 - Case Study Big Data Ingestion
+Kafka historically was created to do big data ingestion. It was very common in the old days to have generic connectors that will take data and
+put it into kafka and then from kafka to offload it into HDFS, amazon s3 or elasticsearch. Kafka can serve a double purpose in that case,
+it can be a speed layer while having a slow layer that will have applications extract, in a batch manner and put data into data stores(HDFS, s3) where
+you wanna do analytics.
+
+![](img/102-1.png)
+
+The architecture:
+
+![](img/102-2.png)
+
+The speed layer can be kafka consumer or big data frameworks like spark, storm or ... that allows you to perform real time analytics,
+create dashboards and alerts, apps and consumers. Now if you don't want to do stuff in real time, instead you want to analyze things in batch,
+then you can have kafka connect or a kafka consumer to take all of your data from kafka(broker) and send it to hadoop(HDFS), amazon s3, RDBMs,
+elasticsearch or ... . This way, you can perform data science, reporting, audit or just for backup/long term storage.
+
+This is a common architecture with kafka.
+
 ## 103 - Case Study Logging and Metrics Aggregation
